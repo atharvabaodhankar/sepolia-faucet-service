@@ -1,0 +1,15 @@
+{
+  "name": "sepolia-faucet-service",
+  "version": "1.0.0",
+  "description": "Reusable Sepolia ETH faucet service for Web3 projects",
+  "type": "module",
+  "scripts": {
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "ethers": "^6.8.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
