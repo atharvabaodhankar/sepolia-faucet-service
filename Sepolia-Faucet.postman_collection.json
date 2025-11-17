@@ -1,0 +1,136 @@
+{
+  "info": {
+    "name": "Sepolia Faucet Service",
+    "description": "Simple API collection for testing the Sepolia ETH Faucet Service\n\n## Usage\nJust send an address, get test ETH!\n\n## Environments\n- Local: http://localhost:3000\n- Production: https://your-faucet.vercel.app",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/health",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "health"]
+        },
+        "description": "Simple health check endpoint to verify the service is running."
+      },
+      "response": []
+    },
+    {
+      "name": "Get Faucet Status",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/status",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "status"]
+        },
+        "description": "Get detailed faucet status including:\n- Faucet address\n- Current balance\n- Requests remaining\n- Network information"
+      },
+      "response": []
+    },
+    {
+      "name": "Request ETH",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/faucet",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "faucet"]
+        },
+        "description": "Request test ETH - Simple!\n\n**Required:**\n- `address`: Recipient Ethereum address\n\n**Features:**\n- 24-hour rate limit per address\n- Automatic transaction\n- Returns transaction hash\n\n**Response:**\n- Transaction hash\n- Amount sent (0.005 ETH)\n- Etherscan link"
+      },
+      "response": []
+    },
+    {
+      "name": "Request ETH - Different Address",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"{{testAddress}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/faucet",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "faucet"]
+        },
+        "description": "Test with environment variable address"
+      },
+      "response": []
+    },
+    {
+      "name": "Request ETH - Invalid Address (Error Test)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"0xinvalid\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/faucet",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "faucet"]
+        },
+        "description": "Test error handling with invalid address.\n\n**Expected:**\n- Status: 400\n- Error: \"Invalid Ethereum address\""
+      },
+      "response": []
+    },
+    {
+      "name": "Request ETH - Missing Address (Error Test)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/faucet",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "faucet"]
+        },
+        "description": "Test error handling with missing address.\n\n**Expected:**\n- Status: 400\n- Error: \"Invalid Ethereum address\""
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    }
+  ]
+}

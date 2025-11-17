@@ -5,7 +5,6 @@ const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia
 const PRIVATE_KEY_RAW = process.env.PRIVATE_KEY;
 const PRIVATE_KEY = PRIVATE_KEY_RAW ? (PRIVATE_KEY_RAW.startsWith('0x') ? PRIVATE_KEY_RAW : '0x' + PRIVATE_KEY_RAW) : null;
 const FAUCET_AMOUNT = process.env.FAUCET_AMOUNT || '0.005';
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || '*';
 const RATE_LIMIT_HOURS = 24;
 
@@ -32,7 +31,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { address, signature, message, masterPassword } = req.body;
+    const { address } = req.body;
 
     // Validate address
     if (!address || !ethers.isAddress(address)) {
@@ -60,51 +59,16 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check if using master password (testing mode)
-    const isMasterPasswordMode = masterPassword && MASTER_PASSWORD && masterPassword === MASTER_PASSWORD;
-
-    if (isMasterPasswordMode) {
-      console.log('🔓 Master password used - bypassing all checks for:', address);
-    } else {
-      // Regular mode - verify signature
-      if (!signature || !message) {
-        return res.status(400).json({ 
-          error: 'Missing required fields: signature and message' 
-        });
-      }
-
-      // Verify signature
-      try {
-        const recoveredAddress = ethers.verifyMessage(message, signature);
-        if (recoveredAddress.toLowerCase() !== address.toLowerCase()) {
-          return res.status(400).json({ error: 'Signature verification failed' });
-        }
-      } catch (error) {
-        return res.status(400).json({ error: 'Invalid signature' });
-      }
-
-      // Check rate limiting
-      const now = Date.now();
-      const lastRequest = requestHistory.get(address.toLowerCase());
-      
-      if (lastRequest && (now - lastRequest) < (RATE_LIMIT_HOURS * 60 * 60 * 1000)) {
-        const hoursLeft = Math.ceil((RATE_LIMIT_HOURS * 60 * 60 * 1000 - (now - lastRequest)) / (60 * 60 * 1000));
-        return res.status(429).json({ 
-          error: `Rate limit exceeded. Try again in ${hoursLeft} hours.`,
-          nextRequestTime: lastRequest + (RATE_LIMIT_HOURS * 60 * 60 * 1000)
-        });
-      }
-
-      // Check recipient balance
-      const recipientBalance = await provider.getBalance(address);
-      const minimumBalance = ethers.parseEther('0.001');
-
-      if (recipientBalance > minimumBalance) {
-        return res.status(400).json({ 
-          error: 'Address already has sufficient balance',
-          currentBalance: ethers.formatEther(recipientBalance)
-        });
-      }
+    // Check rate limiting
+    const now = Date.now();
+    const lastRequest = requestHistory.get(address.toLowerCase());
+    
+    if (lastRequest && (now - lastRequest) < (RATE_LIMIT_HOURS * 60 * 60 * 1000)) {
+      const hoursLeft = Math.ceil((RATE_LIMIT_HOURS * 60 * 60 * 1000 - (now - lastRequest)) / (60 * 60 * 1000));
+      return res.status(429).json({ 
+        error: `Rate limit exceeded. Try again in ${hoursLeft} hours.`,
+        nextRequestTime: lastRequest + (RATE_LIMIT_HOURS * 60 * 60 * 1000)
+      });
     }
 
     // Check faucet balance
@@ -125,12 +89,10 @@ export default async function handler(req, res) {
       gasLimit: 21000,
     });
 
-    // Update rate limiting (only for regular mode)
-    if (!isMasterPasswordMode) {
-      requestHistory.set(address.toLowerCase(), Date.now());
-    }
+    // Update rate limiting
+    requestHistory.set(address.toLowerCase(), Date.now());
 
-    console.log(`✅ Sent ${FAUCET_AMOUNT} ETH to ${address} | TX: ${tx.hash} | Mode: ${isMasterPasswordMode ? 'MASTER' : 'REGULAR'}`);
+    console.log(`✅ Sent ${FAUCET_AMOUNT} ETH to ${address} | TX: ${tx.hash}`);
 
     return res.status(200).json({
       success: true,
@@ -138,8 +100,7 @@ export default async function handler(req, res) {
       amount: FAUCET_AMOUNT,
       recipient: address,
       message: `Successfully sent ${FAUCET_AMOUNT} ETH to ${address}`,
-      explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
-      mode: isMasterPasswordMode ? 'testing' : 'production'
+      explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`
     });
 
   } catch (error) {
