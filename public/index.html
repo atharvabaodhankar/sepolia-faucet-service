@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sepolia Faucet Service - Get Free Test ETH</title>
+  <meta name="description" content="Simple and powerful Sepolia ETH faucet service. Get free test ETH for your Web3 development projects.">
+  <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --primary: #667eea;
+      --primary-dark: #5568d3;
+      --secondary: #764ba2;
+      --success: #10b981;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --bg: #0f172a;
+      --bg-light: #1e293b;
+      --text: #f1f5f9;
+      --text-muted: #94a3b8;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* Animated Background */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      background: linear-gradient(135deg, var(--bg) 0%, #1e293b 100%);
+    }
+
+    .bg-animation::before {
+      content: '';
+      position: absolute;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -250px;
+      right: -250px;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .bg-animation::after {
+      content: '';
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      background: radial-gradient(circle, rgba(118, 75, 162, 0.1) 0%, transparent 70%);
+      border-radius: 50%;
+      bottom: -200px;
+      left: -200px;
+      animation: float 15s ease-in-out infinite reverse;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) rotate(0deg); }
+      33% { transform: translate(30px, -50px) rotate(120deg); }
+      66% { transform: translate(-20px, 20px) rotate(240deg); }
+    }
+
+    /* Header */
+    header {
+      padding: 2rem;
+      text-align: center;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    .logo {
+      font-size: 3rem;
+      margin-bottom: 0.5rem;
+      animation: bounce 2s ease-in-out infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    /* Main Container */
+    .container {
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    /* Card */
+    .card {
+      background: var(--bg-light);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 30px 80px rgba(102, 126, 234, 0.2);
+    }
+
+    /* Input Group */
+    .input-group {
+      margin-bottom: 1.5rem;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    input {
+      width: 100%;
+      padding: 1rem;
+      background: var(--bg);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+
+    input::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* Buttons */
+    .btn {
+      width: 100%;
+      padding: 1rem 2rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.1);
+      transform: translate(-50%, -50%);
+      transition: width 0.6s, height 0.6s;
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(102, 126, 234, 0.4);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      margin-top: 0.5rem;
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary);
+      background: rgba(102, 126, 234, 0.1);
+    }
+
+    /* Status Messages */
+    .status {
+      margin-top: 1.5rem;
+      padding: 1rem;
+      border-radius: 12px;
+      font-size: 0.9rem;
+      display: none;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .status.show {
+      display: block;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .status.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+
+    .status.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid var(--error);
+      color: var(--error);
+    }
+
+    .status.info {
+      background: rgba(102, 126, 234, 0.1);
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .tx-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 600;
+      word-break: break-all;
+    }
+
+    .tx-link:hover {
+      text-decoration: underline;
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg);
+      padding: 1.5rem;
+      border-radius: 16px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--primary);
+    }
+
+    .stat-value {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* Features */
+    .features {
+      margin-top: 3rem;
+      animation: fadeInUp 0.8s ease-out 0.4s both;
+    }
+
+    .features h2 {
+      text-align: center;
+      margin-bottom: 2rem;
+      font-size: 1.8rem;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature {
+      background: var(--bg-light);
+      padding: 1.5rem;
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+
+    .feature:hover {
+      transform: translateY(-5px);
+      border-color: var(--primary);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature h3 {
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      color: var(--text);
+    }
+
+    .feature p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      animation: fadeIn 0.8s ease-out 0.6s both;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Animations */
+    @keyframes fadeInDown {
+      from {
+        opacity: 0;
+        transform: translateY(-30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      margin-right: 0.5rem;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      h1 {
+        font-size: 2rem;
+      }
+
+      .card {
+        padding: 1.5rem;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-animation"></div>
+
+  <header>
+    <div class="logo">🚰</div>
+    <h1>Sepolia Faucet Service</h1>
+    <p class="subtitle">Get free test ETH for your Web3 development</p>
+  </header>
+
+  <div class="container">
+    <div class="card">
+      <div class="input-group">
+        <label for="address">Ethereum Address</label>
+        <input 
+          type="text" 
+          id="address" 
+          placeholder="0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
+          autocomplete="off"
+        >
+      </div>
+
+      <button class="btn btn-primary" id="requestBtn" onclick="requestETH()">
+        <span id="btnText">Request 0.005 ETH</span>
+      </button>
+
+      <button class="btn btn-secondary" onclick="connectWallet()">
+        🦊 Connect MetaMask
+      </button>
+
+      <div id="status" class="status"></div>
+
+      <div class="stats">
+        <div class="stat-card">
+          <div class="stat-value" id="balance">--</div>
+          <div class="stat-label">Faucet Balance</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value" id="requests">--</div>
+          <div class="stat-label">Requests Left</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="features">
+      <h2>Why Use This Faucet?</h2>
+      <div class="feature-grid">
+        <div class="feature">
+          <div class="feature-icon">⚡</div>
+          <h3>Simple & Fast</h3>
+          <p>Just enter your address and get test ETH instantly</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🛡️</div>
+          <h3>Smart Protection</h3>
+          <p>Balance check and 24-hour rate limiting built-in</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔓</div>
+          <h3>Open Source</h3>
+          <p>Fully open source and production-ready</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🌐</div>
+          <h3>API Available</h3>
+          <p>Integrate into your dApps with simple API calls</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>
+      Built with ❤️ for the Web3 community<br>
+      <a href="https://github.com/yourusername/sepolia-faucet-service" target="_blank">View on GitHub</a> • 
+      <a href="/api/status" target="_blank">API Status</a>
+    </p>
+  </footer>
+
+  <script>
+    let userAddress = null;
+
+    // Load faucet stats on page load
+    async function loadStats() {
+      try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        if (data.configured) {
+          document.getElementById('balance').textContent = parseFloat(data.faucet.balance).toFixed(3) + ' ETH';
+          document.getElementById('requests').textContent = data.capacity.requestsRemaining;
+        }
+      } catch (error) {
+        console.error('Failed to load stats:', error);
+      }
+    }
+
+    // Connect MetaMask
+    async function connectWallet() {
+      try {
+        if (typeof window.ethereum === 'undefined') {
+          showStatus('error', '❌ MetaMask is not installed. Please install MetaMask extension.');
+          return;
+        }
+
+        showStatus('info', '🔄 Connecting to MetaMask...');
+
+        const provider = new ethers.providers.Web3Provider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        const signer = provider.getSigner();
+        userAddress = await signer.getAddress();
+
+        // Check network
+        const network = await provider.getNetwork();
+        if (network.chainId !== 11155111) {
+          showStatus('error', '❌ Please switch to Sepolia network in MetaMask.');
+          return;
+        }
+
+        document.getElementById('address').value = userAddress;
+        showStatus('success', `✅ Connected: ${userAddress.substring(0, 6)}...${userAddress.substring(38)}`);
+      } catch (error) {
+        showStatus('error', `❌ Failed to connect: ${error.message}`);
+      }
+    }
+
+    // Request ETH
+    async function requestETH() {
+      const address = document.getElementById('address').value.trim();
+
+      if (!address) {
+        showStatus('error', '❌ Please enter an Ethereum address');
+        return;
+      }
+
+      if (!ethers.utils.isAddress(address)) {
+        showStatus('error', '❌ Invalid Ethereum address');
+        return;
+      }
+
+      const btn = document.getElementById('requestBtn');
+      const btnText = document.getElementById('btnText');
+      
+      btn.disabled = true;
+      btnText.innerHTML = '<span class="spinner"></span>Requesting...';
+      showStatus('info', '🔄 Sending request to faucet...');
+
+      try {
+        const response = await fetch('/api/faucet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ address })
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showStatus('success', `
+            ✅ Success! Sent ${data.amount} ETH<br>
+            <a href="${data.explorerUrl}" target="_blank" class="tx-link">
+              View on Etherscan →
+            </a>
+          `);
+          loadStats(); // Refresh stats
+        } else {
+          showStatus('error', `❌ ${data.error}`);
+        }
+      } catch (error) {
+        showStatus('error', `❌ Request failed: ${error.message}`);
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'Request 0.005 ETH';
+      }
+    }
+
+    // Show status message
+    function showStatus(type, message) {
+      const statusEl = document.getElementById('status');
+      statusEl.className = `status ${type} show`;
+      statusEl.innerHTML = message;
+    }
+
+    // Allow Enter key to submit
+    document.getElementById('address').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        requestETH();
+      }
+    });
+
+    // Load stats on page load
+    loadStats();
+  </script>
+</body>
+</html>
