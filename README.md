@@ -1,15 +1,17 @@
 # 🚰 Sepolia Faucet Service
 
-Standalone Sepolia ETH faucet service for Web3 projects. Deploy once, use everywhere!
+Simple and powerful Sepolia ETH faucet service. Deploy once, use everywhere!
 
 ## ✨ Features
 
-- ✅ **Dual Authentication**: Wallet signature verification + master password for testing
-- ✅ **Rate Limiting**: 24-hour cooldown per address (bypassed with master password)
-- ✅ **Balance Checking**: Only sends to addresses with < 0.001 ETH (bypassed with master password)
+- ✅ **Simple**: Just send an address, get test ETH
+- ✅ **Smart**: Checks balance before sending (only sends if < 0.001 ETH)
+- ✅ **Rate Limited**: 24-hour cooldown per address
+- ✅ **Admin Mode**: Master password bypasses all checks for testing
 - ✅ **CORS Enabled**: Works from any domain
-- ✅ **Production Ready**: Comprehensive error handling and logging
-- ✅ **Testing Mode**: Master password bypasses all limits for development
+- ✅ **Production Ready**: Comprehensive error handling
+
+---
 
 ## 🚀 Quick Start
 
@@ -19,7 +21,7 @@ Standalone Sepolia ETH faucet service for Web3 projects. Deploy once, use everyw
 npm install
 ```
 
-### 2. Configure Environment Variables
+### 2. Configure Environment
 
 Copy `.env.example` to `.env` and fill in your values:
 
@@ -27,49 +29,46 @@ Copy `.env.example` to `.env` and fill in your values:
 SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/YOUR_API_KEY
 PRIVATE_KEY=your_faucet_wallet_private_key
 FAUCET_AMOUNT=0.005
-MASTER_PASSWORD=your-secret-testing-password
+MASTER_PASSWORD=your-secret-password
 ALLOWED_ORIGINS=*
 ```
 
-### 3. Deploy to Vercel
+### 3. Test Locally
 
 ```bash
-# Install Vercel CLI
-npm install -g vercel
+npm test
+vercel dev
+```
 
-# Login
-vercel login
+### 4. Deploy to Vercel
 
-# Deploy
-vercel
-
-# Add environment variables in Vercel dashboard
-# Then redeploy for production
+```bash
 vercel --prod
 ```
+
+Add environment variables in Vercel Dashboard → Settings → Environment Variables
+
+---
 
 ## 📡 API Endpoints
 
 ### POST /api/faucet
 
-Send Sepolia ETH to users.
+Send Sepolia ETH to an address.
 
-**Regular Request (Production):**
+#### Normal Mode (For Users)
+
+**Request:**
 ```json
 {
-  "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "signature": "0x...",
-  "message": "Faucet Request\nAddress: 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\nTimestamp: 1234567890"
+  "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
 }
 ```
 
-**Testing Request (Master Password):**
-```json
-{
-  "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "masterPassword": "your-secret-testing-password"
-}
-```
+**Features:**
+- Checks if address has balance (< 0.001 ETH)
+- Rate limited (24 hours per address)
+- Only sends if user needs ETH
 
 **Response:**
 ```json
@@ -80,7 +79,36 @@ Send Sepolia ETH to users.
   "recipient": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
   "message": "Successfully sent 0.005 ETH to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
   "explorerUrl": "https://sepolia.etherscan.io/tx/0x...",
-  "mode": "testing"
+  "mode": "normal"
+}
+```
+
+#### Admin Mode (For Testing)
+
+**Request:**
+```json
+{
+  "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "masterPassword": "your-secret-password"
+}
+```
+
+**Features:**
+- Bypasses balance check
+- Bypasses rate limit
+- Sends ETH even if address has balance
+- Perfect for testing and development
+
+**Response:**
+```json
+{
+  "success": true,
+  "transactionHash": "0x...",
+  "amount": "0.005",
+  "recipient": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "message": "Successfully sent 0.005 ETH to 0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+  "explorerUrl": "https://sepolia.etherscan.io/tx/0x...",
+  "mode": "admin"
 }
 ```
 
@@ -94,16 +122,15 @@ Check faucet balance and health.
   "configured": true,
   "faucet": {
     "address": "0xF5CaF845421A21D2326f3bA04Fb99eD0F75B8465",
-    "balance": "2.08",
+    "balance": "2.03",
     "isLowBalance": false
   },
   "settings": {
     "amountPerRequest": "0.005",
-    "rateLimitHours": 24,
-    "masterPasswordEnabled": true
+    "rateLimitHours": 24
   },
   "capacity": {
-    "requestsRemaining": 416
+    "requestsRemaining": 406
   },
   "status": "healthy"
 }
@@ -111,66 +138,82 @@ Check faucet balance and health.
 
 ### GET /api/health
 
-Simple health check endpoint.
+Simple health check.
 
-## 🔌 Integration Examples
-
-### JavaScript/TypeScript (Regular Users)
-
-```javascript
-const FAUCET_URL = 'https://your-faucet.vercel.app';
-
-async function requestTestETH(userAddress, signer) {
-  // Create message
-  const message = `Faucet Request\nAddress: ${userAddress}\nTimestamp: ${Date.now()}`;
-  
-  // Sign with user's wallet
-  const signature = await signer.signMessage(message);
-  
-  // Request funds
-  const response = await fetch(`${FAUCET_URL}/api/faucet`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      address: userAddress, 
-      signature, 
-      message 
-    })
-  });
-  
-  const data = await response.json();
-  
-  if (data.success) {
-    console.log('✅ Received test ETH!', data.transactionHash);
-  } else {
-    console.error('❌ Faucet request failed:', data.error);
-  }
-  
-  return data;
+**Response:**
+```json
+{
+  "status": "healthy",
+  "service": "Sepolia Faucet Service",
+  "timestamp": "2024-01-15T10:30:00.000Z"
 }
 ```
 
-### Testing/Development (Master Password)
+---
+
+## 🧪 Testing
+
+### cURL Examples
+
+**Normal Mode:**
+```bash
+curl -X POST http://localhost:3000/api/faucet \
+  -H "Content-Type: application/json" \
+  -d '{"address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"}'
+```
+
+**Admin Mode:**
+```bash
+curl -X POST http://localhost:3000/api/faucet \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    "masterPassword": "your-secret-password"
+  }'
+```
+
+**Check Status:**
+```bash
+curl http://localhost:3000/api/status
+```
+
+### Postman Collection
+
+Import `Sepolia-Faucet.postman_collection.json` into Postman for easy testing.
+
+**Quick Guide:** See [POSTMAN-QUICK-START.md](./POSTMAN-QUICK-START.md)
+
+---
+
+## 🔌 Integration Examples
+
+### JavaScript/Fetch
 
 ```javascript
-const FAUCET_URL = 'https://your-faucet.vercel.app';
-const MASTER_PASSWORD = 'your-secret-password'; // Store securely!
-
-async function requestTestETHAdmin(userAddress) {
-  const response = await fetch(`${FAUCET_URL}/api/faucet`, {
+// Normal Mode
+async function requestTestETH(address) {
+  const response = await fetch('https://your-faucet.vercel.app/api/faucet', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ 
-      address: userAddress,
-      masterPassword: MASTER_PASSWORD  // Bypasses all checks
-    })
+    body: JSON.stringify({ address })
   });
   
   return await response.json();
 }
 
-// Usage - can call multiple times without rate limits
-await requestTestETHAdmin('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb');
+// Admin Mode (for testing)
+async function requestTestETHAdmin(address) {
+  const response = await fetch('https://your-faucet.vercel.app/api/faucet', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ 
+      address,
+      masterPassword: 'your-secret-password'
+    })
+  });
+  
+  return await response.json();
+}
 ```
 
 ### React Hook
@@ -181,27 +224,24 @@ import { useState } from 'react';
 export function useFaucet(apiUrl) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  
-  const requestETH = async (address, signer) => {
+
+  const requestETH = async (address) => {
     setLoading(true);
     setError(null);
-    
+
     try {
-      const message = `Faucet Request\nAddress: ${address}\nTimestamp: ${Date.now()}`;
-      const signature = await signer.signMessage(message);
-      
       const response = await fetch(`${apiUrl}/api/faucet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address, signature, message })
+        body: JSON.stringify({ address })
       });
-      
+
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Faucet request failed');
       }
-      
+
       return data;
     } catch (err) {
       setError(err.message);
@@ -210,63 +250,106 @@ export function useFaucet(apiUrl) {
       setLoading(false);
     }
   };
-  
+
   return { requestETH, loading, error };
 }
-
-// Usage in component:
-// const { requestETH, loading } = useFaucet('https://your-faucet.vercel.app');
-// await requestETH(userAddress, signer);
 ```
 
-### cURL Testing
+### Python
 
-```bash
-# Test with master password (bypasses all limits)
-curl -X POST https://your-faucet.vercel.app/api/faucet \
-  -H "Content-Type: application/json" \
-  -d '{
-    "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-    "masterPassword": "your-secret-password"
-  }'
+```python
+import requests
 
-# Check faucet status
-curl https://your-faucet.vercel.app/api/status
+def request_test_eth(address):
+    response = requests.post('https://your-faucet.vercel.app/api/faucet', 
+        json={'address': address}
+    )
+    return response.json()
+
+# Admin mode
+def request_test_eth_admin(address, master_password):
+    response = requests.post('https://your-faucet.vercel.app/api/faucet',
+        json={
+            'address': address,
+            'masterPassword': master_password
+        }
+    )
+    return response.json()
 ```
+
+---
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SEPOLIA_RPC_URL` | Yes | - | Infura/Alchemy Sepolia endpoint |
+| `PRIVATE_KEY` | Yes | - | Faucet wallet private key |
+| `FAUCET_AMOUNT` | No | 0.005 | ETH amount per request |
+| `MASTER_PASSWORD` | No | - | Admin password (bypasses checks) |
+| `ALLOWED_ORIGINS` | No | * | CORS allowed origins |
+
+---
 
 ## 🔐 Security
 
-### Master Password Best Practices
+### Normal Mode Protection
+- ✅ Balance check (only sends if < 0.001 ETH)
+- ✅ Rate limiting (24 hours per address)
+- ✅ Prevents abuse
 
-⚠️ **CRITICAL**: The master password bypasses ALL security checks!
+### Master Password
+- ⚠️ **Keep it secret!**
+- ⚠️ Only use for testing/admin
+- ⚠️ Don't expose in client code
+- ⚠️ Store in environment variables only
 
-**DO:**
-- ✅ Use a strong, random password (32+ characters)
-- ✅ Store in environment variables only
-- ✅ Never commit to git
-- ✅ Only use for testing/development
-- ✅ Rotate regularly
+### Best Practices
+1. Use dedicated wallet for faucet only
+2. Keep limited funds (1-2 ETH max)
+3. Monitor balance regularly
+4. Rotate master password periodically
+5. Never commit `.env` to git
 
-**DON'T:**
-- ❌ Use simple passwords
-- ❌ Share with anyone
-- ❌ Hardcode in client applications
-- ❌ Use in production client code
+---
 
-### Generate Strong Password
+## ⚠️ Error Responses
 
-```bash
-# Generate a strong password
-openssl rand -base64 32
+### Rate Limit Exceeded
+```json
+{
+  "error": "Rate limit exceeded. Try again in 12 hours.",
+  "nextRequestTime": 1705318200000
+}
 ```
 
-### Production Security
+### Already Has Balance
+```json
+{
+  "error": "Address already has sufficient balance",
+  "currentBalance": "0.05",
+  "message": "This address already has enough ETH. Faucet is for addresses with low balance only."
+}
+```
 
-1. **Dedicated Wallet**: Use a separate wallet ONLY for the faucet
-2. **Limited Funds**: Keep only 1-2 ETH in the faucet wallet
-3. **Monitor Balance**: Check `/api/status` regularly
-4. **Rate Limiting**: Built-in 24-hour cooldown per address
-5. **Signature Verification**: Prevents unauthorized requests
+### Invalid Address
+```json
+{
+  "error": "Invalid Ethereum address"
+}
+```
+
+### Faucet Empty
+```json
+{
+  "error": "Faucet is empty. Please try again later.",
+  "faucetBalance": "0.001"
+}
+```
+
+---
 
 ## 📊 Monitoring
 
@@ -276,90 +359,70 @@ openssl rand -base64 32
 curl https://your-faucet.vercel.app/api/status
 ```
 
-### Monitoring Script
+### Monitor Balance
 
 ```javascript
-// monitor.js
 setInterval(async () => {
   const response = await fetch('https://your-faucet.vercel.app/api/status');
   const data = await response.json();
   
   if (data.faucet.isLowBalance) {
     console.log('⚠️ Faucet balance low! Refill needed.');
-    // Send alert (email, Slack, etc.)
   }
-  
-  console.log(`Balance: ${data.faucet.balance} ETH | Requests remaining: ${data.capacity.requestsRemaining}`);
-}, 3600000); // Check every hour
+}, 3600000); // Every hour
 ```
 
-## 🎯 Use Cases
-
-This faucet service can be integrated into:
-
-1. **DApp Onboarding** - Auto-fund new users
-2. **Testing Environments** - Quick ETH for developers
-3. **Educational Projects** - Students learning Web3
-4. **Hackathons** - Participants need test ETH
-5. **Multiple Projects** - One faucet for all your apps
-
-## 💰 Cost Estimation
-
-### Vercel (Free Tier)
-- ✅ 100GB bandwidth/month
-- ✅ 100 serverless function executions/day
-- ✅ Sufficient for ~1000 users/month
-
-### Infura (Free Tier)
-- ✅ 100k requests/day
-- ✅ More than enough for faucet operations
-
-### Faucet Wallet
-- 💰 1 ETH = 200 users (0.005 ETH each)
-- 💰 Refill monthly or as needed
-
-**Total Cost**: $0/month (free tiers) + Sepolia ETH (free from public faucets)
-
-## 🔧 Environment Variables
-
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `SEPOLIA_RPC_URL` | Yes | - | Infura/Alchemy Sepolia endpoint |
-| `PRIVATE_KEY` | Yes | - | Faucet wallet private key |
-| `FAUCET_AMOUNT` | No | 0.005 | ETH amount per request |
-| `MASTER_PASSWORD` | No | - | Testing bypass password |
-| `ALLOWED_ORIGINS` | No | * | CORS allowed origins |
+---
 
 ## 🐛 Troubleshooting
 
 ### "Faucet not configured"
-- Check that `PRIVATE_KEY` is set in environment variables
-- Ensure private key is valid (with or without 0x prefix)
+→ Check environment variables in Vercel dashboard
 
 ### "Rate limit exceeded"
-- Wait 24 hours or use master password for testing
-- Check `/api/status` for next request time
+→ Wait 24 hours OR use master password for testing
 
 ### "Address already has sufficient balance"
-- User has > 0.001 ETH already
-- Use master password to bypass this check
+→ User has > 0.001 ETH already OR use master password to bypass
 
 ### "Faucet is empty"
-- Refill the faucet wallet with Sepolia ETH
-- Check balance at `/api/status`
+→ Refill wallet from https://sepoliafaucet.com/
+
+---
+
+## 💰 Cost Estimation
+
+**Free Tier (Sufficient for most use cases):**
+- Vercel: 100GB bandwidth/month
+- Infura: 100k requests/day
+- Estimated: ~1000 users/month
+
+**Total Cost:** $0/month + Free Sepolia ETH
+
+---
+
+## 🎯 Use Cases
+
+- DApp onboarding (auto-fund new users)
+- Testing environments (quick ETH for developers)
+- Educational projects (students learning Web3)
+- Hackathons (participants need test ETH)
+- Multiple projects (one faucet for all apps)
+
+---
 
 ## 📝 License
 
 MIT
 
+---
+
 ## 🤝 Contributing
 
 Contributions welcome! Please open an issue or PR.
 
-## 📧 Support
-
-For issues or questions, please open a GitHub issue.
-
 ---
 
 **Built with ❤️ for the Web3 community**
+
+**Deploy once, use everywhere!** 🚀

@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "Sepolia Faucet Service",
-    "description": "Simple API collection for testing the Sepolia ETH Faucet Service\n\n## Usage\nJust send an address, get test ETH!\n\n## Environments\n- Local: http://localhost:3000\n- Production: https://your-faucet.vercel.app",
+    "description": "Simple API collection for testing the Sepolia ETH Faucet Service\n\n## Two Modes\n1. Normal Mode: Just address (checks balance, rate limited)\n2. Admin Mode: Address + master password (bypasses all checks)\n\n## Environments\n- Local: http://localhost:3000\n- Production: https://your-faucet.vercel.app",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
@@ -34,7 +34,7 @@
       "response": []
     },
     {
-      "name": "Request ETH",
+      "name": "Request ETH (Normal Mode)",
       "request": {
         "method": "POST",
         "header": [
@@ -52,12 +52,35 @@
           "host": ["{{baseUrl}}"],
           "path": ["api", "faucet"]
         },
-        "description": "Request test ETH - Simple!\n\n**Required:**\n- `address`: Recipient Ethereum address\n\n**Features:**\n- 24-hour rate limit per address\n- Automatic transaction\n- Returns transaction hash\n\n**Response:**\n- Transaction hash\n- Amount sent (0.005 ETH)\n- Etherscan link"
+        "description": "Request test ETH - Normal Mode\n\n**Required:**\n- `address`: Recipient Ethereum address\n\n**Features:**\n- Checks if address has balance (< 0.001 ETH)\n- 24-hour rate limit per address\n- Only sends if user needs ETH\n\n**Response:**\n- Transaction hash\n- Amount sent (0.005 ETH)\n- Etherscan link\n- Mode: \"normal\""
       },
       "response": []
     },
     {
-      "name": "Request ETH - Different Address",
+      "name": "Request ETH (Admin Mode - Master Password)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"masterPassword\": \"dev-testing-secure-2024\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/faucet",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "faucet"]
+        },
+        "description": "Request test ETH - Admin Mode\n\n**Required:**\n- `address`: Recipient Ethereum address\n- `masterPassword`: Master password from .env\n\n**Features:**\n- Bypasses balance check\n- Bypasses rate limit\n- Sends ETH even if address has balance\n- Perfect for testing\n\n**Response:**\n- Transaction hash\n- Amount sent (0.005 ETH)\n- Etherscan link\n- Mode: \"admin\""
+      },
+      "response": []
+    },
+    {
+      "name": "Request ETH - Using Variable",
       "request": {
         "method": "POST",
         "header": [
@@ -75,7 +98,30 @@
           "host": ["{{baseUrl}}"],
           "path": ["api", "faucet"]
         },
-        "description": "Test with environment variable address"
+        "description": "Test with environment variable address (Normal Mode)"
+      },
+      "response": []
+    },
+    {
+      "name": "Request ETH - Admin with Variable",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"address\": \"{{testAddress}}\",\n  \"masterPassword\": \"{{masterPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/faucet",
+          "host": ["{{baseUrl}}"],
+          "path": ["api", "faucet"]
+        },
+        "description": "Test with environment variables (Admin Mode)"
       },
       "response": []
     },

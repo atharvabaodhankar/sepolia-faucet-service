@@ -5,6 +5,7 @@ const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia
 const PRIVATE_KEY_RAW = process.env.PRIVATE_KEY;
 const PRIVATE_KEY = PRIVATE_KEY_RAW ? (PRIVATE_KEY_RAW.startsWith('0x') ? PRIVATE_KEY_RAW : '0x' + PRIVATE_KEY_RAW) : null;
 const FAUCET_AMOUNT = process.env.FAUCET_AMOUNT || '0.005';
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || '*';
 const RATE_LIMIT_HOURS = 24;
 
@@ -31,7 +32,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { address } = req.body;
+    const { address, masterPassword } = req.body;
 
     // Validate address
     if (!address || !ethers.isAddress(address)) {
@@ -59,16 +60,35 @@ export default async function handler(req, res) {
       });
     }
 
-    // Check rate limiting
-    const now = Date.now();
-    const lastRequest = requestHistory.get(address.toLowerCase());
-    
-    if (lastRequest && (now - lastRequest) < (RATE_LIMIT_HOURS * 60 * 60 * 1000)) {
-      const hoursLeft = Math.ceil((RATE_LIMIT_HOURS * 60 * 60 * 1000 - (now - lastRequest)) / (60 * 60 * 1000));
-      return res.status(429).json({ 
-        error: `Rate limit exceeded. Try again in ${hoursLeft} hours.`,
-        nextRequestTime: lastRequest + (RATE_LIMIT_HOURS * 60 * 60 * 1000)
-      });
+    // Check if using master password (bypasses balance check and rate limit)
+    const isMasterPasswordMode = masterPassword && MASTER_PASSWORD && masterPassword === MASTER_PASSWORD;
+
+    if (!isMasterPasswordMode) {
+      // Normal mode - check rate limiting
+      const now = Date.now();
+      const lastRequest = requestHistory.get(address.toLowerCase());
+      
+      if (lastRequest && (now - lastRequest) < (RATE_LIMIT_HOURS * 60 * 60 * 1000)) {
+        const hoursLeft = Math.ceil((RATE_LIMIT_HOURS * 60 * 60 * 1000 - (now - lastRequest)) / (60 * 60 * 1000));
+        return res.status(429).json({ 
+          error: `Rate limit exceeded. Try again in ${hoursLeft} hours.`,
+          nextRequestTime: lastRequest + (RATE_LIMIT_HOURS * 60 * 60 * 1000)
+        });
+      }
+
+      // Check recipient balance
+      const recipientBalance = await provider.getBalance(address);
+      const minimumBalance = ethers.parseEther('0.001');
+
+      if (recipientBalance > minimumBalance) {
+        return res.status(400).json({ 
+          error: 'Address already has sufficient balance',
+          currentBalance: ethers.formatEther(recipientBalance),
+          message: 'This address already has enough ETH. Faucet is for addresses with low balance only.'
+        });
+      }
+    } else {
+      console.log('🔓 Master password used - bypassing balance check and rate limit for:', address);
     }
 
     // Check faucet balance
@@ -89,10 +109,12 @@ export default async function handler(req, res) {
       gasLimit: 21000,
     });
 
-    // Update rate limiting
-    requestHistory.set(address.toLowerCase(), Date.now());
+    // Update rate limiting (only for normal mode)
+    if (!isMasterPasswordMode) {
+      requestHistory.set(address.toLowerCase(), Date.now());
+    }
 
-    console.log(`✅ Sent ${FAUCET_AMOUNT} ETH to ${address} | TX: ${tx.hash}`);
+    console.log(`✅ Sent ${FAUCET_AMOUNT} ETH to ${address} | TX: ${tx.hash} | Mode: ${isMasterPasswordMode ? 'MASTER' : 'NORMAL'}`);
 
     return res.status(200).json({
       success: true,
@@ -100,7 +122,8 @@ export default async function handler(req, res) {
       amount: FAUCET_AMOUNT,
       recipient: address,
       message: `Successfully sent ${FAUCET_AMOUNT} ETH to ${address}`,
-      explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`
+      explorerUrl: `https://sepolia.etherscan.io/tx/${tx.hash}`,
+      mode: isMasterPasswordMode ? 'admin' : 'normal'
     });
 
   } catch (error) {
