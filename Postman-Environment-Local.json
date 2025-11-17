@@ -1,0 +1,31 @@
+{
+  "id": "local-environment",
+  "name": "Sepolia Faucet - Local",
+  "values": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "masterPassword",
+      "value": "dev-testing-secure-2024",
+      "type": "secret",
+      "enabled": true
+    },
+    {
+      "key": "testAddress",
+      "value": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+      "type": "default",
+      "enabled": true
+    },
+    {
+      "key": "faucetAddress",
+      "value": "0xF5CaF845421A21D2326f3bA04Fb99eD0F75B8465",
+      "type": "default",
+      "enabled": true
+    }
+  ],
+  "_postman_variable_scope": "environment"
+}

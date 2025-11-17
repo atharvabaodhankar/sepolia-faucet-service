@@ -4,6 +4,7 @@
   "description": "Reusable Sepolia ETH faucet service for Web3 projects",
   "type": "module",
   "scripts": {
+    "test": "node test-local.js",
     "deploy": "vercel --prod"
   },
   "dependencies": {
@@ -11,5 +12,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "dotenv": "^17.2.3"
   }
 }
