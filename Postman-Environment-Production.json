@@ -4,7 +4,7 @@
   "values": [
     {
       "key": "baseUrl",
-      "value": "https://your-faucet.vercel.app",
+      "value": "https://sepolia-faucet-service.vercel.app",
       "type": "default",
       "enabled": true
     },

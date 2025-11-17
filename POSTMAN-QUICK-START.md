@@ -118,15 +118,13 @@ Content-Type: application/json
 
 ### Local
 - `baseUrl`: `http://localhost:3000`
-- `masterPassword`: `dev-testing-secure-2025`
+- `masterPassword`: `dev-testing-secure-2024`
 - `testAddress`: `0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb`
 
 ### Production
-- `baseUrl`: `https://your-faucet.vercel.app`
-- `masterPassword`: `dev-testing-secure-2025`
+- `baseUrl`: `https://sepolia-faucet-service.vercel.app`
+- `masterPassword`: `dev-testing-secure-2024`
 - `testAddress`: `0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb`
-
-**Update baseUrl after deployment!**
 
 ---
 

@@ -192,7 +192,7 @@ Import `Sepolia-Faucet.postman_collection.json` into Postman for easy testing.
 ```javascript
 // Normal Mode
 async function requestTestETH(address) {
-  const response = await fetch('https://your-faucet.vercel.app/api/faucet', {
+  const response = await fetch('https://sepolia-faucet-service.vercel.app/api/faucet', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ address })
@@ -203,7 +203,7 @@ async function requestTestETH(address) {
 
 // Admin Mode (for testing)
 async function requestTestETHAdmin(address) {
-  const response = await fetch('https://your-faucet.vercel.app/api/faucet', {
+  const response = await fetch('https://sepolia-faucet-service.vercel.app/api/faucet', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ 
@@ -253,6 +253,9 @@ export function useFaucet(apiUrl) {
 
   return { requestETH, loading, error };
 }
+
+// Usage
+const { requestETH, loading, error } = useFaucet('https://sepolia-faucet-service.vercel.app');
 ```
 
 ### Python
@@ -261,14 +264,14 @@ export function useFaucet(apiUrl) {
 import requests
 
 def request_test_eth(address):
-    response = requests.post('https://your-faucet.vercel.app/api/faucet', 
+    response = requests.post('https://sepolia-faucet-service.vercel.app/api/faucet', 
         json={'address': address}
     )
     return response.json()
 
 # Admin mode
 def request_test_eth_admin(address, master_password):
-    response = requests.post('https://your-faucet.vercel.app/api/faucet',
+    response = requests.post('https://sepolia-faucet-service.vercel.app/api/faucet',
         json={
             'address': address,
             'masterPassword': master_password
@@ -356,14 +359,14 @@ def request_test_eth_admin(address, master_password):
 ### Check Faucet Status
 
 ```bash
-curl https://your-faucet.vercel.app/api/status
+curl https://sepolia-faucet-service.vercel.app/api/status
 ```
 
 ### Monitor Balance
 
 ```javascript
 setInterval(async () => {
-  const response = await fetch('https://your-faucet.vercel.app/api/status');
+  const response = await fetch('https://sepolia-faucet-service.vercel.app/api/status');
   const data = await response.json();
   
   if (data.faucet.isLowBalance) {
