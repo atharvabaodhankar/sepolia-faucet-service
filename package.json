@@ -5,7 +5,6 @@
   "main": "index.js",
   "scripts": {
     "dev": "vercel dev",
-    "build": "vercel build",
     "test": "node test-status.js",
     "test:status": "node test-status.js",
     "test:curl": "curl -s http://localhost:3000/api/status | jq .",
