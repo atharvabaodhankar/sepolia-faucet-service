@@ -1,0 +1,579 @@
+{
+  "info": {
+    "name": "Multi-Network Faucet Service",
+    "description": "API collection for testing the Multi-Network Faucet Service\n\n## Supported Networks\n- Sepolia (ETH)\n- Polygon Amoy (POL)\n\n## Two Modes\n1. Normal Mode: Address + network (checks balance, rate limited per network)\n2. Admin Mode: Address + network + master password (bypasses all checks)\n\n## Environments\n- Local: http://localhost:3000\n- Production: https://your-faucet.vercel.app",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "12345678-1234-1234-1234-123456789012",
+    "_exporter_id": "12345678"
+  },
+  "item": [
+    {
+      "name": "🏥 Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "health"]
+            },
+            "description": "Simple health check endpoint to verify the service is running."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Multi-Network Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/status",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "status"]
+            },
+            "description": "Get detailed status for all supported networks including:\n- Faucet address and balance per network\n- Requests remaining per network\n- Network health status\n- Overall service status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔷 Sepolia Network",
+      "item": [
+        {
+          "name": "Sepolia - Request ETH (Normal Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"network\": \"sepolia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Request Sepolia ETH - Normal Mode\n\n**Required:**\n- `address`: Recipient Ethereum address\n- `network`: \"sepolia\"\n\n**Features:**\n- Checks if address has balance (< 0.001 ETH)\n- 24-hour rate limit per address per network\n- Sends 0.005 ETH\n\n**Response:**\n- Transaction hash\n- Amount: \"0.005\"\n- Currency: \"ETH\"\n- Network: \"Sepolia\"\n- Etherscan link"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has transaction hash\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('transactionHash');",
+                  "    pm.expect(jsonData.currency).to.eql('ETH');",
+                  "    pm.expect(jsonData.network).to.eql('Sepolia');",
+                  "});",
+                  "",
+                  "pm.test(\"Transaction hash is valid\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.transactionHash).to.match(/^0x[a-fA-F0-9]{64}$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Sepolia - Request ETH (Admin Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"network\": \"sepolia\",\n  \"masterPassword\": \"{{masterPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Request Sepolia ETH - Admin Mode\n\n**Required:**\n- `address`: Recipient Ethereum address\n- `network`: \"sepolia\"\n- `masterPassword`: Master password from .env\n\n**Features:**\n- Bypasses balance check\n- Bypasses rate limit\n- Perfect for testing\n\n**Response:**\n- Mode: \"admin\""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Admin mode response\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.mode).to.eql('admin');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Sepolia - With Variables",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"{{testAddress}}\",\n  \"network\": \"sepolia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test Sepolia with environment variable address"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🟣 Polygon Network",
+      "item": [
+        {
+          "name": "Polygon - Request POL (Normal Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"network\": \"polygon\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Request Polygon Amoy MATIC - Normal Mode\n\n**Required:**\n- `address`: Recipient Ethereum address\n- `network`: \"polygon\"\n\n**Features:**\n- Checks if address has balance (< 0.01 MATIC)\n- 24-hour rate limit per address per network\n- Sends 0.1 MATIC\n\n**Response:**\n- Transaction hash\n- Amount: \"0.1\"\n- Currency: \"MATIC\"\n- Network: \"Polygon Amoy\"\n- Polygonscan link"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Response has transaction hash\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData).to.have.property('transactionHash');",
+                  "    pm.expect(jsonData.currency).to.eql('POL');",
+                  "    pm.expect(jsonData.network).to.eql('Polygon Amoy');",
+                  "});",
+                  "",
+                  "pm.test(\"Transaction hash is valid\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.transactionHash).to.match(/^0x[a-fA-F0-9]{64}$/);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Polygon - Request POL (Admin Mode)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"network\": \"polygon\",\n  \"masterPassword\": \"{{masterPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Request Polygon POL - Admin Mode\n\n**Required:**\n- `address`: Recipient Ethereum address\n- `network`: \"polygon\"\n- `masterPassword`: Master password from .env\n\n**Features:**\n- Bypasses balance check\n- Bypasses rate limit\n- Perfect for testing\n\n**Response:**\n- Mode: \"admin\""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Admin mode response\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.mode).to.eql('admin');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Polygon - With Variables",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"{{testAddress}}\",\n  \"network\": \"polygon\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test Polygon with environment variable address"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "🔄 Backward Compatibility",
+      "item": [
+        {
+          "name": "Legacy Request (No Network - Defaults to Sepolia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test backward compatibility - missing network parameter should default to Sepolia.\n\n**Expected:**\n- Status: 200\n- Network: \"Sepolia\"\n- Currency: \"ETH\"\n- Amount: \"0.005\""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Defaults to Sepolia\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.network).to.eql('Sepolia');",
+                  "    pm.expect(jsonData.currency).to.eql('ETH');",
+                  "    pm.expect(jsonData.amount).to.eql('0.005');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Legacy Admin Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"masterPassword\": \"{{masterPassword}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test backward compatibility - admin mode without network parameter should default to Sepolia."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Admin mode with Sepolia default\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.mode).to.eql('admin');",
+                  "    pm.expect(jsonData.network).to.eql('Sepolia');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "❌ Error Testing",
+      "item": [
+        {
+          "name": "Invalid Network",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb\",\n  \"network\": \"invalid\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test error handling with invalid network.\n\n**Expected:**\n- Status: 400\n- Error: \"Invalid network\"\n- supportedNetworks: [\"sepolia\", \"polygon\"]"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Invalid network error\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.include('Invalid network');",
+                  "    pm.expect(jsonData).to.have.property('supportedNetworks');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Invalid Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"0xinvalid\",\n  \"network\": \"sepolia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test error handling with invalid address.\n\n**Expected:**\n- Status: 400\n- Error: \"Invalid Ethereum address\""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Invalid address error\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.include('Invalid Ethereum address');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Missing Address",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"network\": \"sepolia\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test error handling with missing address.\n\n**Expected:**\n- Status: 400\n- Error: \"Invalid Ethereum address\""
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Missing address error\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.include('Invalid Ethereum address');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        },
+        {
+          "name": "Empty Request Body",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/faucet",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "faucet"]
+            },
+            "description": "Test error handling with empty request body."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Empty body error\", function () {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.error).to.include('Invalid Ethereum address');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "response": []
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Set timestamp for requests",
+          "pm.globals.set('timestamp', new Date().toISOString());"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Global test to log response time",
+          "pm.test('Response time is reasonable', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(10000);",
+          "});"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "testAddress",
+      "value": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+      "type": "string"
+    },
+    {
+      "key": "masterPassword",
+      "value": "web3byatharva",
+      "type": "string"
+    }
+  ]
+}
