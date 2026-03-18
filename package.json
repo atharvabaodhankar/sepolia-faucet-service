@@ -1,19 +1,36 @@
 {
-  "name": "sepolia-faucet-service",
-  "version": "1.0.0",
-  "description": "Reusable Sepolia ETH faucet service for Web3 projects",
-  "type": "module",
+  "name": "multi-network-faucet",
+  "version": "2.0.0",
+  "description": "Multi-network faucet service supporting Sepolia ETH and Polygon Amoy POL",
+  "main": "index.js",
   "scripts": {
-    "test": "node test-local.js",
-    "deploy": "vercel --prod"
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "test": "node test-status.js",
+    "test:status": "node test-status.js",
+    "test:curl": "curl -s http://localhost:3000/api/status | jq .",
+    "test:health": "curl -s http://localhost:3000/api/health | jq .",
+    "start": "vercel dev --listen 3000"
   },
+  "keywords": [
+    "faucet",
+    "ethereum",
+    "polygon",
+    "sepolia",
+    "testnet",
+    "web3",
+    "blockchain",
+    "api"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
   "dependencies": {
     "ethers": "^6.8.0"
   },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
   "engines": {
     "node": ">=18.0.0"
-  },
-  "devDependencies": {
-    "dotenv": "^17.2.3"
   }
 }

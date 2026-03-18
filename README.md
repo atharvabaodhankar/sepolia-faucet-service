@@ -18,14 +18,14 @@ A simple, powerful, and reliable faucet API service that supports multiple testn
 ### Get Sepolia ETH (Backward Compatible)
 ```bash
 # This still works - defaults to Sepolia
-curl -X POST https://your-domain.vercel.app/api/faucet \
+curl -X POST sepolia-faucet-service.vercel.app/api/faucet \
   -H "Content-Type: application/json" \
   -d '{"address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"}'
 ```
 
 ### Get Sepolia ETH (Explicit)
 ```bash
-curl -X POST https://your-domain.vercel.app/api/faucet \
+curl -X POST sepolia-faucet-service.vercel.app/api/faucet \
   -H "Content-Type: application/json" \
   -d '{
     "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
@@ -35,7 +35,7 @@ curl -X POST https://your-domain.vercel.app/api/faucet \
 
 ### Get Polygon Amoy POL (New!)
 ```bash
-curl -X POST https://your-domain.vercel.app/api/faucet \
+curl -X POST sepolia-faucet-service.vercel.app/api/faucet \
   -H "Content-Type: application/json" \
   -d '{
     "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
@@ -226,7 +226,7 @@ export function useMultiNetworkFaucet() {
 import requests
 
 class MultiNetworkFaucet:
-    def __init__(self, base_url='https://your-domain.vercel.app'):
+    def __init__(self, base_url='sepolia-faucet-service.vercel.app/'):
         self.base_url = base_url
     
     def request_tokens(self, address, network='sepolia'):

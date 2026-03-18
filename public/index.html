@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sepolia Faucet Service - API Documentation</title>
-  <meta name="description" content="Simple and powerful Sepolia ETH faucet API. Deploy once, use everywhere in your Web3 projects.">
+  <title>Multi-Network Faucet Service - API Documentation</title>
+  <meta name="description" content="Simple and powerful multi-network faucet API. Get test ETH on Sepolia and POL on Polygon Amoy.">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
   <style>
@@ -14,6 +14,7 @@
       --primary: #667eea;
       --secondary: #764ba2;
       --success: #10b981;
+      --polygon: #8247e5;
       --bg: #0f172a;
       --bg-light: #1e293b;
       --text: #f1f5f9;
@@ -29,7 +30,7 @@
     }
 
     header {
-      background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--polygon) 50%, var(--secondary) 100%);
       padding: 3rem 2rem;
       text-align: center;
     }
@@ -37,6 +38,25 @@
     .logo { font-size: 4rem; margin-bottom: 1rem; }
     h1 { font-size: 2.5rem; margin-bottom: 0.5rem; color: white; }
     .subtitle { font-size: 1.2rem; color: rgba(255, 255, 255, 0.9); margin-bottom: 1.5rem; }
+
+    .network-badges {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .network-badge {
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: white;
+    }
+
+    .network-badge.sepolia { background: rgba(102, 126, 234, 0.8); }
+    .network-badge.polygon { background: rgba(130, 71, 229, 0.8); }
 
     .header-buttons { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
     .btn {
@@ -67,7 +87,12 @@
       text-align: center;
     }
 
-    .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); margin-bottom: 0.5rem; }
+    .stat-card.sepolia { border-left: 4px solid var(--primary); }
+    .stat-card.polygon { border-left: 4px solid var(--polygon); }
+
+    .stat-value { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+    .stat-value.sepolia { color: var(--primary); }
+    .stat-value.polygon { color: var(--polygon); }
     .stat-label { color: var(--text-muted); font-size: 0.9rem; }
 
     .section { margin-bottom: 4rem; }
@@ -145,6 +170,29 @@
     .endpoint-path { font-family: monospace; font-size: 1.1rem; }
     .endpoint h3 { font-size: 1.2rem; margin-bottom: 0.5rem; }
 
+    .network-tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .network-tab {
+      padding: 0.75rem 1.5rem;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .network-tab.active { color: var(--text); border-bottom-color: var(--primary); }
+    .network-tab.polygon.active { border-bottom-color: var(--polygon); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
     footer {
       background: var(--bg-light);
       padding: 3rem 2rem;
@@ -160,14 +208,19 @@
     @media (max-width: 768px) {
       h1 { font-size: 2rem; }
       .endpoint-header { flex-direction: column; align-items: flex-start; }
+      .network-tabs { flex-wrap: wrap; }
     }
   </style>
 </head>
 <body>
   <header>
     <div class="logo">🚰</div>
-    <h1>Sepolia Faucet Service</h1>
-    <p class="subtitle">Deploy once, use everywhere. Simple API for your Web3 projects.</p>
+    <h1>Multi-Network Faucet Service</h1>
+    <p class="subtitle">Deploy once, use everywhere. Get test tokens on multiple networks.</p>
+    <div class="network-badges">
+      <span class="network-badge sepolia">🔷 Sepolia ETH</span>
+      <span class="network-badge polygon">🟣 Polygon Amoy POL</span>
+    </div>
     <div class="header-buttons">
       <a href="https://github.com/atharvabaodhankar/sepolia-faucet-service" class="btn btn-primary" target="_blank">📦 View on GitHub</a>
       <a href="/api/status" class="btn btn-secondary" target="_blank">📊 API Status</a>
@@ -176,43 +229,93 @@
 
   <div class="container">
     <div class="stats-bar">
-      <div class="stat-card">
-        <div class="stat-value">0.005</div>
-        <div class="stat-label">ETH Per Request</div>
+      <div class="stat-card sepolia">
+        <div class="stat-value sepolia">0.005</div>
+        <div class="stat-label">ETH Per Request (Sepolia)</div>
+      </div>
+      <div class="stat-card polygon">
+        <div class="stat-value polygon">0.1</div>
+        <div class="stat-label">POL Per Request (Polygon)</div>
       </div>
       <div class="stat-card">
         <div class="stat-value">24h</div>
-        <div class="stat-label">Rate Limit</div>
+        <div class="stat-label">Rate Limit (Per Network)</div>
       </div>
     </div>
 
     <div class="section">
       <h2>🚀 Quick Start</h2>
-      <p>Get test ETH with a simple API call. No authentication required for normal mode.</p>
+      <p>Get test tokens with a simple API call. Choose your network and start testing!</p>
       
-      <div class="code-block">
-        <div class="code-header">
-          <span class="code-lang">cURL</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-        </div>
-        <pre><code>curl -X POST https://sepolia-faucet-service.vercel.app/api/faucet \
-  -H "Content-Type: application/json" \
-  -d '{"address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"}'</code></pre>
+      <div class="network-tabs">
+        <button class="network-tab active" onclick="switchTab('sepolia')">Sepolia ETH</button>
+        <button class="network-tab polygon" onclick="switchTab('polygon')">Polygon Amoy POL</button>
       </div>
 
-      <div class="code-block">
-        <div class="code-header">
-          <span class="code-lang">JavaScript</span>
-          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      <div id="sepolia-tab" class="tab-content active">
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">cURL - Sepolia</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code>curl -X POST https://sepolia-faucet-service.vercel.app/api/faucet \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    "network": "sepolia"
+  }'</code></pre>
         </div>
-        <pre><code>const response = await fetch('https://sepolia-faucet-service.vercel.app/api/faucet', {
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">JavaScript - Sepolia</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code>const response = await fetch('https://sepolia-faucet-service.vercel.app/api/faucet', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb' })
+  body: JSON.stringify({ 
+    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+    network: 'sepolia'
+  })
 });
 
 const data = await response.json();
 console.log(data.transactionHash);</code></pre>
+        </div>
+      </div>
+
+      <div id="polygon-tab" class="tab-content">
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">cURL - Polygon Amoy</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code>curl -X POST https://sepolia-faucet-service.vercel.app/api/faucet \
+  -H "Content-Type: application/json" \
+  -d '{
+    "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
+    "network": "polygon"
+  }'</code></pre>
+        </div>
+
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">JavaScript - Polygon Amoy</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><code>const response = await fetch('https://sepolia-faucet-service.vercel.app/api/faucet', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ 
+    address: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb',
+    network: 'polygon'
+  })
+});
+
+const data = await response.json();
+console.log(data.transactionHash);</code></pre>
+        </div>
       </div>
     </div>
 
@@ -220,24 +323,24 @@ console.log(data.transactionHash);</code></pre>
       <h2>✨ Features</h2>
       <div class="features-grid">
         <div class="feature">
+          <div class="feature-icon">🌐</div>
+          <h3>Multi-Network</h3>
+          <p>Support for Sepolia and Polygon Amoy testnets with more networks coming soon.</p>
+        </div>
+        <div class="feature">
           <div class="feature-icon">⚡</div>
           <h3>Simple API</h3>
-          <p>Just send an address, get test ETH. No complex authentication.</p>
+          <p>Just send an address and network, get test tokens. No complex authentication.</p>
         </div>
         <div class="feature">
           <div class="feature-icon">🛡️</div>
           <h3>Smart Protection</h3>
-          <p>Balance check and 24-hour rate limiting prevent abuse.</p>
+          <p>Balance check and 24-hour rate limiting per network prevent abuse.</p>
         </div>
         <div class="feature">
           <div class="feature-icon">🔐</div>
           <h3>Admin Mode</h3>
-          <p>Master password bypasses all checks for testing.</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🌐</div>
-          <h3>CORS Enabled</h3>
-          <p>Use from any domain, perfect for dApps.</p>
+          <p>Master password bypasses all checks for testing and development.</p>
         </div>
       </div>
     </div>
@@ -250,33 +353,23 @@ console.log(data.transactionHash);</code></pre>
           <span class="method post">POST</span>
           <span class="endpoint-path">/api/faucet</span>
         </div>
-        <h3>Request Test ETH</h3>
-        <p>Send Sepolia ETH to an address. Two modes available: Normal and Admin.</p>
+        <h3>Request Test Tokens</h3>
+        <p>Send test tokens to an address on your chosen network. Supports both normal and admin modes.</p>
 
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Normal Mode</h4>
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Request Body</h4>
         <div class="code-block">
           <div class="code-header">
-            <span class="code-lang">Request</span>
-            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
-          </div>
-          <pre><code>{
-  "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb"
-}</code></pre>
-        </div>
-
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Admin Mode (Testing)</h4>
-        <div class="code-block">
-          <div class="code-header">
-            <span class="code-lang">Request</span>
+            <span class="code-lang">JSON</span>
             <button class="copy-btn" onclick="copyCode(this)">Copy</button>
           </div>
           <pre><code>{
   "address": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
-  "masterPassword": "your-secret-password"
+  "network": "sepolia", // or "polygon"
+  "masterPassword": "optional-for-admin-mode"
 }</code></pre>
         </div>
 
-        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Response</h4>
+        <h4 style="margin-top: 1.5rem; margin-bottom: 0.5rem;">Success Response</h4>
         <div class="code-block">
           <div class="code-header">
             <span class="code-lang">Success (200)</span>
@@ -285,6 +378,8 @@ console.log(data.transactionHash);</code></pre>
   "success": true,
   "transactionHash": "0x1234567890abcdef...",
   "amount": "0.005",
+  "currency": "ETH",
+  "network": "Sepolia",
   "recipient": "0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb",
   "explorerUrl": "https://sepolia.etherscan.io/tx/0x...",
   "mode": "normal"
@@ -297,8 +392,8 @@ console.log(data.transactionHash);</code></pre>
           <span class="method get">GET</span>
           <span class="endpoint-path">/api/status</span>
         </div>
-        <h3>Get Faucet Status</h3>
-        <p>Check faucet balance, requests remaining, and health status.</p>
+        <h3>Get Multi-Network Status</h3>
+        <p>Check faucet balance, requests remaining, and health status for all supported networks.</p>
 
         <div class="code-block">
           <div class="code-header">
@@ -306,14 +401,36 @@ console.log(data.transactionHash);</code></pre>
           </div>
           <pre><code>{
   "configured": true,
-  "faucet": {
-    "address": "0xF5CaF845421A21D2326f3bA04Fb99eD0F75B8465",
-    "balance": "2.03"
+  "timestamp": "2024-03-18T10:30:00.000Z",
+  "networks": {
+    "sepolia": {
+      "name": "Sepolia",
+      "currency": "ETH",
+      "faucet": {
+        "address": "0xF5CaF845421A21D2326f3bA04Fb99eD0F75B8465",
+        "balance": "2.03"
+      },
+      "capacity": {
+        "amountPerRequest": "0.005",
+        "requestsRemaining": 406
+      },
+      "status": "healthy"
+    },
+    "polygon": {
+      "name": "Polygon Amoy",
+      "currency": "POL",
+      "faucet": {
+        "address": "0xF5CaF845421A21D2326f3bA04Fb99eD0F75B8465",
+        "balance": "50.2"
+      },
+      "capacity": {
+        "amountPerRequest": "0.1",
+        "requestsRemaining": 502
+      },
+      "status": "healthy"
+    }
   },
-  "capacity": {
-    "requestsRemaining": 406
-  },
-  "status": "healthy"
+  "overallStatus": "healthy"
 }</code></pre>
         </div>
       </div>
@@ -322,7 +439,7 @@ console.log(data.transactionHash);</code></pre>
     <div class="section">
       <h2>🔌 Integration Examples</h2>
 
-      <h3 style="margin-bottom: 1rem;">React Hook</h3>
+      <h3 style="margin-bottom: 1rem;">React Hook for Multi-Network</h3>
       <div class="code-block">
         <div class="code-header">
           <span class="code-lang">JavaScript</span>
@@ -330,16 +447,16 @@ console.log(data.transactionHash);</code></pre>
         </div>
         <pre><code>import { useState } from 'react';
 
-export function useFaucet() {
+export function useMultiNetworkFaucet() {
   const [loading, setLoading] = useState(false);
 
-  const requestETH = async (address) => {
+  const requestTokens = async (address, network = 'sepolia') => {
     setLoading(true);
     try {
       const response = await fetch('https://sepolia-faucet-service.vercel.app/api/faucet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address })
+        body: JSON.stringify({ address, network })
       });
       return await response.json();
     } finally {
@@ -347,11 +464,11 @@ export function useFaucet() {
     }
   };
 
-  return { requestETH, loading };
+  return { requestTokens, loading };
 }</code></pre>
       </div>
 
-      <h3 style="margin-bottom: 1rem; margin-top: 2rem;">Python</h3>
+      <h3 style="margin-bottom: 1rem; margin-top: 2rem;">Python Multi-Network Client</h3>
       <div class="code-block">
         <div class="code-header">
           <span class="code-lang">Python</span>
@@ -359,15 +476,32 @@ export function useFaucet() {
         </div>
         <pre><code>import requests
 
-def request_test_eth(address):
-    response = requests.post(
-        'https://sepolia-faucet-service.vercel.app/api/faucet',
-        json={'address': address}
-    )
-    return response.json()
+class MultiNetworkFaucet:
+    def __init__(self, base_url='https://sepolia-faucet-service.vercel.app'):
+        self.base_url = base_url
+    
+    def request_tokens(self, address, network='sepolia'):
+        response = requests.post(
+            f'{self.base_url}/api/faucet',
+            json={'address': address, 'network': network}
+        )
+        return response.json()
+    
+    def get_status(self):
+        response = requests.get(f'{self.base_url}/api/status')
+        return response.json()
 
-result = request_test_eth('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb')
-print(result['transactionHash'])</code></pre>
+# Usage
+faucet = MultiNetworkFaucet()
+
+# Get Sepolia ETH
+sepolia_result = faucet.request_tokens('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', 'sepolia')
+
+# Get Polygon POL
+polygon_result = faucet.request_tokens('0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb', 'polygon')
+
+print(f"Sepolia TX: {sepolia_result['transactionHash']}")
+print(f"Polygon TX: {polygon_result['transactionHash']}")</code></pre>
       </div>
     </div>
   </div>
@@ -376,8 +510,9 @@ print(result['transactionHash'])</code></pre>
     <p>Built with ❤️ for the Web3 community</p>
     <p>
       <a href="https://github.com/atharvabaodhankar/sepolia-faucet-service" target="_blank">GitHub</a> •
-      <a href="/api/health" target="_blank">API Status</a> •
-      <a href="https://sepolia.etherscan.io" target="_blank">Sepolia Explorer</a>
+      <a href="/api/status" target="_blank">API Status</a> •
+      <a href="https://sepolia.etherscan.io" target="_blank">Sepolia Explorer</a> •
+      <a href="https://amoy.polygonscan.com" target="_blank">Polygon Amoy Explorer</a>
     </p>
   </footer>
 
@@ -390,6 +525,24 @@ print(result['transactionHash'])</code></pre>
         button.textContent = 'Copied!';
         setTimeout(() => button.textContent = 'Copy', 2000);
       });
+    }
+
+    function switchTab(network) {
+      // Hide all tab contents
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Remove active class from all tabs
+      document.querySelectorAll('.network-tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected tab content
+      document.getElementById(network + '-tab').classList.add('active');
+      
+      // Add active class to selected tab
+      event.target.classList.add('active');
     }
 
     document.addEventListener('DOMContentLoaded', () => {

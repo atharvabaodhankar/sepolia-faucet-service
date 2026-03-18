@@ -1,10 +1,33 @@
 import { ethers } from 'ethers';
 
+// Environment variables
 const SEPOLIA_RPC_URL = process.env.SEPOLIA_RPC_URL || 'https://ethereum-sepolia-rpc.publicnode.com';
+const POLYGON_AMOY_RPC_URL = process.env.POLYGON_AMOY_RPC_URL || 'https://rpc-amoy.polygon.technology';
 const PRIVATE_KEY_RAW = process.env.PRIVATE_KEY;
 const PRIVATE_KEY = PRIVATE_KEY_RAW ? (PRIVATE_KEY_RAW.startsWith('0x') ? PRIVATE_KEY_RAW : '0x' + PRIVATE_KEY_RAW) : null;
-const FAUCET_AMOUNT = process.env.FAUCET_AMOUNT || '0.005';
+const SEPOLIA_FAUCET_AMOUNT = process.env.SEPOLIA_FAUCET_AMOUNT || '0.005';
+const POLYGON_FAUCET_AMOUNT = process.env.POLYGON_FAUCET_AMOUNT || '0.1';
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS || '*';
+
+// Network configurations
+const NETWORKS = {
+  sepolia: {
+    name: 'Sepolia',
+    rpcUrl: SEPOLIA_RPC_URL,
+    chainId: 11155111,
+    faucetAmount: SEPOLIA_FAUCET_AMOUNT,
+    currency: 'ETH',
+    explorerUrl: 'https://sepolia.etherscan.io/address/'
+  },
+  polygon: {
+    name: 'Polygon Amoy',
+    rpcUrl: POLYGON_AMOY_RPC_URL,
+    chainId: 80002,
+    faucetAmount: POLYGON_FAUCET_AMOUNT,
+    currency: 'POL',
+    explorerUrl: 'https://amoy.polygonscan.com/address/'
+  }
+};
 
 export default async function handler(req, res) {
   // CORS headers
@@ -27,60 +50,88 @@ export default async function handler(req, res) {
 
   try {
     if (!PRIVATE_KEY) {
-      return res.status(500).json({ 
-        error: 'Faucet not configured',
-        configured: false
+      return res.status(500).json({
+        configured: false,
+        error: 'Faucet not configured - PRIVATE_KEY missing'
       });
     }
 
-    const provider = new ethers.JsonRpcProvider(SEPOLIA_RPC_URL);
-    const faucetWallet = new ethers.Wallet(PRIVATE_KEY, provider);
+    const networkStatus = {};
+    let overallStatus = 'healthy';
 
-    const balance = await provider.getBalance(faucetWallet.address);
-    const balanceETH = ethers.formatEther(balance);
+    // Check status for each network
+    for (const [networkKey, networkConfig] of Object.entries(NETWORKS)) {
+      try {
+        const provider = new ethers.JsonRpcProvider(networkConfig.rpcUrl);
+        const faucetWallet = new ethers.Wallet(PRIVATE_KEY, provider);
+        
+        // Get faucet balance
+        const balance = await provider.getBalance(faucetWallet.address);
+        const balanceFormatted = ethers.formatEther(balance);
+        const faucetAmount = parseFloat(networkConfig.faucetAmount);
+        const requestsRemaining = Math.floor(parseFloat(balanceFormatted) / faucetAmount);
 
-    const amountPerRequest = ethers.parseEther(FAUCET_AMOUNT);
-    const requestsRemaining = Math.floor(Number(balance) / Number(amountPerRequest));
+        // Check network connectivity
+        const blockNumber = await provider.getBlockNumber();
+        
+        networkStatus[networkKey] = {
+          name: networkConfig.name,
+          currency: networkConfig.currency,
+          chainId: networkConfig.chainId,
+          faucet: {
+            address: faucetWallet.address,
+            balance: balanceFormatted,
+            currency: networkConfig.currency
+          },
+          capacity: {
+            amountPerRequest: networkConfig.faucetAmount,
+            requestsRemaining: requestsRemaining
+          },
+          network: {
+            blockNumber: blockNumber,
+            connected: true
+          },
+          explorerUrl: `${networkConfig.explorerUrl}${faucetWallet.address}`,
+          status: requestsRemaining > 10 ? 'healthy' : requestsRemaining > 0 ? 'low' : 'empty'
+        };
 
-    const network = await provider.getNetwork();
-    const blockNumber = await provider.getBlockNumber();
+        // Update overall status
+        if (networkStatus[networkKey].status === 'empty') {
+          overallStatus = 'degraded';
+        } else if (networkStatus[networkKey].status === 'low' && overallStatus === 'healthy') {
+          overallStatus = 'warning';
+        }
 
-    const minimumBalance = ethers.parseEther('0.1');
-    const isLowBalance = balance < minimumBalance;
+      } catch (error) {
+        console.error(`Error checking ${networkConfig.name} status:`, error);
+        networkStatus[networkKey] = {
+          name: networkConfig.name,
+          currency: networkConfig.currency,
+          chainId: networkConfig.chainId,
+          error: error.message,
+          status: 'error'
+        };
+        overallStatus = 'degraded';
+      }
+    }
 
     return res.status(200).json({
       configured: true,
-      faucet: {
-        address: faucetWallet.address,
-        balance: balanceETH,
-        balanceWei: balance.toString(),
-        isLowBalance,
-        minimumBalance: '0.1'
-      },
-      settings: {
-        amountPerRequest: FAUCET_AMOUNT,
-        rateLimitHours: 24,
-        masterPasswordEnabled: !!process.env.MASTER_PASSWORD
-      },
-      capacity: {
-        requestsRemaining,
-        estimatedDaysRemaining: Math.floor(requestsRemaining / 100)
-      },
-      network: {
-        name: network.name,
-        chainId: network.chainId.toString(),
-        blockNumber
-      },
-      status: isLowBalance ? 'warning' : 'healthy',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      networks: networkStatus,
+      overallStatus: overallStatus,
+      supportedNetworks: Object.keys(NETWORKS),
+      rateLimit: {
+        hours: 24,
+        perNetwork: true
+      }
     });
 
   } catch (error) {
-    console.error('Faucet status error:', error);
-    
-    return res.status(500).json({ 
-      error: 'Failed to get faucet status',
+    console.error('Status check error:', error);
+    return res.status(500).json({
       configured: false,
+      error: 'Failed to check faucet status',
       details: error.message
     });
   }
