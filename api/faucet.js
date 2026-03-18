@@ -37,7 +37,7 @@ const NETWORKS = {
 const requestHistory = new Map();
 
 export default async function handler(req, res) {
-  // CORS headers
+  // Set CORS headers first
   const origin = req.headers.origin;
   const allowedOriginsList = ALLOWED_ORIGINS.split(',').map(o => o.trim());
   
@@ -46,13 +46,19 @@ export default async function handler(req, res) {
   }
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Content-Type', 'application/json');
 
+  // Handle preflight requests
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ 
+      success: false,
+      error: 'Method not allowed',
+      allowedMethods: ['POST', 'OPTIONS']
+    });
   }
 
   try {
@@ -61,6 +67,7 @@ export default async function handler(req, res) {
     // Validate network
     if (!NETWORKS[network]) {
       return res.status(400).json({ 
+        success: false,
         error: 'Invalid network',
         supportedNetworks: Object.keys(NETWORKS)
       });
@@ -70,12 +77,16 @@ export default async function handler(req, res) {
 
     // Validate address
     if (!address || !ethers.isAddress(address)) {
-      return res.status(400).json({ error: 'Invalid Ethereum address' });
+      return res.status(400).json({ 
+        success: false,
+        error: 'Invalid Ethereum address' 
+      });
     }
 
     // Check if faucet is configured
     if (!PRIVATE_KEY) {
       return res.status(500).json({ 
+        success: false,
         error: 'Faucet not configured',
         debug: 'PRIVATE_KEY environment variable is not set'
       });
@@ -89,6 +100,7 @@ export default async function handler(req, res) {
     } catch (walletError) {
       console.error('Wallet initialization error:', walletError);
       return res.status(500).json({ 
+        success: false,
         error: 'Failed to initialize faucet wallet',
         details: walletError.message
       });
@@ -106,6 +118,7 @@ export default async function handler(req, res) {
       if (lastRequest && (now - lastRequest) < (RATE_LIMIT_HOURS * 60 * 60 * 1000)) {
         const hoursLeft = Math.ceil((RATE_LIMIT_HOURS * 60 * 60 * 1000 - (now - lastRequest)) / (60 * 60 * 1000));
         return res.status(429).json({ 
+          success: false,
           error: `Rate limit exceeded for ${networkConfig.name}. Try again in ${hoursLeft} hours.`,
           nextRequestTime: lastRequest + (RATE_LIMIT_HOURS * 60 * 60 * 1000),
           network: networkConfig.name
@@ -118,6 +131,7 @@ export default async function handler(req, res) {
 
       if (recipientBalance > minimumBalance) {
         return res.status(400).json({ 
+          success: false,
           error: `Address already has sufficient balance on ${networkConfig.name}`,
           currentBalance: ethers.formatEther(recipientBalance),
           currency: networkConfig.currency,
@@ -134,6 +148,7 @@ export default async function handler(req, res) {
 
     if (faucetBalance < amountToSend) {
       return res.status(503).json({ 
+        success: false,
         error: `Faucet is empty on ${networkConfig.name}. Please try again later.`,
         faucetBalance: ethers.formatEther(faucetBalance),
         network: networkConfig.name,
@@ -175,20 +190,28 @@ export default async function handler(req, res) {
     // Handle RPC rate limiting
     if (error.message && error.message.includes('in-flight transaction limit')) {
       return res.status(429).json({ 
+        success: false,
         error: 'Too many requests. Please try again in a few minutes.',
         details: 'RPC rate limit reached'
       });
     }
     
     if (error.code === 'INSUFFICIENT_FUNDS') {
-      return res.status(503).json({ error: 'Faucet has insufficient funds' });
+      return res.status(503).json({ 
+        success: false,
+        error: 'Faucet has insufficient funds' 
+      });
     }
     
     if (error.code === 'NETWORK_ERROR') {
-      return res.status(503).json({ error: 'Network error. Please try again later.' });
+      return res.status(503).json({ 
+        success: false,
+        error: 'Network error. Please try again later.' 
+      });
     }
 
     return res.status(500).json({ 
+      success: false,
       error: 'Internal server error',
       details: error.message,
       code: error.code
